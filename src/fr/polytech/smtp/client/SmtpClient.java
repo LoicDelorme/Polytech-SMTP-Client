@@ -135,7 +135,7 @@ public class SmtpClient extends Thread {
 			commandResult = readCommandResult();
 			LOGGER.log(Level.INFO, commandResult);
 
-			throw new Exception("All recipients are invalids -> process exited and mail drop request aborted!");
+			throw new Exception("All recipients are invalid -> process exited and mail drop request aborted!");
 		}
 
 		// Request sending data.
