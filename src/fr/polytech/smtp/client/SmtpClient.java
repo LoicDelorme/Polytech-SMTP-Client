@@ -5,6 +5,8 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -68,10 +70,11 @@ public class SmtpClient extends Thread {
 	 *            The headers.
 	 * @param emailContent
 	 *            The email content.
+	 * @return The state of the send.
 	 * @throws Exception
 	 *             If an error occurs.
 	 */
-	public void sendEmail(Map<String, String> headers, String emailContent) throws Exception {
+	public String sendEmail(Map<String, String> headers, String emailContent) throws Exception {
 		final String from = headers.get("From:");
 		final String[] recipients = headers.get("To:").split(";");
 
@@ -104,7 +107,7 @@ public class SmtpClient extends Thread {
 		LOGGER.log(Level.INFO, commandResult);
 
 		// Send recipients email addresses.
-		boolean atLeastOneValidEmailAddress = false;
+		final List<String> invalidEmailAddresses = new ArrayList<String>();
 		for (String recipient : recipients) {
 			command = String.format("RCPT TO: <%s>", recipient);
 			writeCommand(command);
@@ -112,13 +115,13 @@ public class SmtpClient extends Thread {
 
 			commandResult = readCommandResult();
 			LOGGER.log(Level.INFO, commandResult);
-			if (commandResult.startsWith("250")) {
-				atLeastOneValidEmailAddress = true;
+			if (commandResult.startsWith("550")) {
+				invalidEmailAddresses.add(recipient);
 			}
 		}
 
 		// Check there is at least one valid recipient
-		if (!atLeastOneValidEmailAddress) {
+		if (invalidEmailAddresses.size() == recipients.length) {
 			// Reset mail drop request.
 			command = "RSET";
 			writeCommand(command);
@@ -135,7 +138,7 @@ public class SmtpClient extends Thread {
 			commandResult = readCommandResult();
 			LOGGER.log(Level.INFO, commandResult);
 
-			throw new Exception("All recipients are invalid -> process exited and mail drop request aborted!");
+			throw new Exception(String.format("All recipients are invalid (%s) -> process exited and mail drop request aborted!", invalidEmailAddresses.stream().collect(Collectors.joining(" ; "))));
 		}
 
 		// Request sending data.
@@ -181,6 +184,12 @@ public class SmtpClient extends Thread {
 		// Waiting for closing ACK.
 		commandResult = readCommandResult();
 		LOGGER.log(Level.INFO, commandResult);
+
+		if (!invalidEmailAddresses.isEmpty()) {
+			return String.format("The email was successfully sent. However, %d recipient(s) was(ere) invalid (%s)", invalidEmailAddresses.size(), invalidEmailAddresses.stream().collect(Collectors.joining(" ; ")));
+		}
+
+		return "The email was successfully sent to all recipient(s).";
 	}
 
 	/**

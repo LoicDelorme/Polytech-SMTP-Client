@@ -87,10 +87,9 @@ public class SmtpEmailEditorController implements Initializable {
 			final Map<String, String> headers = generateHeaders();
 			final String emailContent = this.emailContentInputTextArea.getText().trim();
 
-			final SmtpClient smtpClient = new SmtpClient(smtpServerHostname, smtpServerPort);
-			smtpClient.sendEmail(headers, emailContent);
+			final String result = new SmtpClient(smtpServerHostname, smtpServerPort).sendEmail(headers, emailContent);
 
-			alert = generateAlert(AlertType.INFORMATION, "Success", "Email sent!", "The email was successfully sent to the recipient(s).");
+			alert = generateAlert(AlertType.INFORMATION, "Success", "Email sent!", result);
 		} catch (Exception e) {
 			alert = generateAlert(AlertType.ERROR, "Error", "An exception occured!", e.getMessage());
 		}
