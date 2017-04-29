@@ -163,10 +163,9 @@ public class SmtpClient extends Thread {
 		content.append(computedHeaders);
 		content.append("\r\n");
 		content.append(".\r\n");
-		content.append(emailContent);
+		content.append(emailContent.replaceAll("([\n]{2,})", "\r\n"));
 		content.append("\r\n");
 		content.append(endingCharacter);
-		content.append("\r\n");
 
 		command = content.toString();
 		writeCommand(command);
